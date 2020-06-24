@@ -1,7 +1,8 @@
 [
   {
     "command": "release",
-    "permission": "admin",
-    "named_args": true
+    "permission": "write",
+    "named_args": true,
+    "repository": "BSData/chatops"
   }
 ]
