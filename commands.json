@@ -1,0 +1,7 @@
+[
+  {
+    "command": "release",
+    "permission": "admin",
+    "named_args": true
+  }
+]
