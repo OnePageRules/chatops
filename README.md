@@ -39,4 +39,25 @@ and the patch number is increased by 1 (latest v2.2.2 -> v2.2.3).
    - major: latest v2.2.2 -> v3.0.0
 - 'tag' specifies release tag manually.
 
+Examples:
+
+The following, given latest release v2.2.2, will create a release v2.2.3 (increases patch/third section of semantic version).
+In a case there are no releases at all, it'll fall back to creating release v1.0.0 (so it works even the first time).
+> /release
+> This is the release title (only first line after command line)!
+>
+> This and everything that follows will become the release description (body).
+
+The following, given latest release v2.2.2, will create a release v2.3.0 (increases minor, resets patch).
+> /release bump=minor
+> This is title of v2.3.0
+
+The following, given latest release v2.2.2, will create a release v3.0.0 (increases major, resets minor and patch).
+> /release bump=major
+> This is title of v3.0.0
+
+The following, given any latest release, will create a release v1.2.3 (as specified).
+> /release tag=v1.2.3
+> This is title of v1.2.3
+
 Details: [release-command.yml](.github/workflows/release-command.yml)
