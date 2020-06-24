@@ -28,7 +28,14 @@ jobs:
 
 # Release command
 
-Trigger by chatops '/release' or '/release bump=minor' or '/release tag=v1.2.3'
+Trigger by chatops '/release' or '/release bump=minor' or '/release tag=v1.2.3'.
+
+- Create an issue comment that starts with `/release` on the first line.
+- Second (non-empty) line will be used as a release title/name.
+- All following lines will be interpreted as a release description/body.
+- Description (even if empty) will always be appended with a comparison link to the previous release, unless there is no previous release.
+
+### Technicalities
 
 By default, the latest release is retrieved, it's tag parsed as a semantic version
 and the patch number is increased by 1 (latest v2.2.2 -> v2.2.3).
@@ -39,7 +46,7 @@ and the patch number is increased by 1 (latest v2.2.2 -> v2.2.3).
    - major: latest v2.2.2 -> v3.0.0
 - 'tag' specifies release tag manually.
 
-Examples:
+### Examples:
 
 The following, given latest release v2.2.2, will create a release v2.2.3 (increases patch/third section of semantic version).
 In a case there are no releases at all, it'll fall back to creating release v1.0.0 (so it works even the first time).
@@ -48,6 +55,19 @@ In a case there are no releases at all, it'll fall back to creating release v1.0
 > This is the release title (only first line after command line)!
 >
 > This and everything that follows will become the release description (body).
+
+Resulting release details:
+
+> Release tag:
+> > v2.2.3
+> 
+> Release name: 
+> > This is the release title (only first line after command line)!
+> 
+> Release description:
+> > This and everything that follows will become the release description (body).
+> > 
+> > Full changelog https://github.com/test/test/compare/v2.2.2...v2.2.3
 
 The following, given latest release v2.2.2, will create a release v2.3.0 (increases minor, resets patch).
 > /release bump=minor
@@ -64,4 +84,4 @@ The following, given any latest release, will create a release v1.2.3 (as specif
 >
 > This is title of v1.2.3
 
-Details: [release-command.yml](.github/workflows/release-command.yml)
+Workflow file: [release-command.yml](.github/workflows/release-command.yml)
