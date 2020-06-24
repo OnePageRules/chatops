@@ -18,13 +18,11 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    env:
-      ARG_BUMP: ${{ github.event.client_payload.slash_command.bump }}
-      ARG_TAG: ${{ github.event.client_payload.slash_command.tag }}
     steps:
       - name: Link to this workflow in command comment
         uses: peter-evans/create-or-update-comment@v1
         with:
+          token: ${{ secrets.BSDATA_BOT_TOKEN }}
           comment-id: ${{ github.event.client_payload.github.payload.comment.id }}
           body: |
             <!-- Command output -->
@@ -50,47 +48,46 @@ jobs:
               NextTag = $cp.slash_command.tag
               CommentBody = $cp.github.payload.comment.body
             }
-            $result = ./script/ConvertFrom-ReleaseCommand @args
-            Set-ActionOutput tag $result.tag
-            Set-ActionOutput name $result.name
-            Set-ActionOutput body $result.body
+            return ./script/ConvertFrom-ReleaseCommand @args
 
       - name: Create a release
         uses: actions/github-script@v2
         id: create_release
         env:
-          tag_name: ${{ steps.get_values.outputs.tag }}
-          release_name: ${{ steps.get_values.outputs.name }}
-          release_body: ${{ steps.get_values.outputs.body }}
+          RELEASE_INFO: ${{ steps.get_values.outputs.result }}
         with:
-          # use PAT token to trigger publish-catpkg workflow
           github-token: ${{ secrets.BSDATA_BOT_TOKEN }}
           result-encoding: string
           script: |
+            const rel = JSON.parse(process.env.RELEASE_INFO)
             const [owner, repo] = '${{ $github.event.client_payload.github.payload.repository.full_name }}'.split('/')
             const { data: release } = await github.repos.createRelease({
               owner,
               repo,
-              tag_name: process.env.tag_name,
-              name: process.env.release_name,
-              body: process.env.release_body
+              tag_name: rel.tag,
+              name: rel.name,
+              body: rel.body
             })
-            return release.html_url
+            core.setOutput('tag_name', release.tag_name)
+            core.setOutput('name', release.name)
+            core.setOutput('html_url', release.html_url)
 
       - name: Add reaction to command comment on success
         uses: peter-evans/create-or-update-comment@v1
         with:
+          token: ${{ secrets.BSDATA_BOT_TOKEN }}
           comment-id: ${{ github.event.client_payload.github.payload.comment.id }}
           body: |
             Created release:
-            [${{ steps.get_values.outputs.tag }}](${{ steps.create_release.outputs.result }})
-            **${{ steps.get_values.outputs.name }}**
+            [${{ steps.create_release.outputs.tag_name }}](${{ steps.create_release.outputs.html_url }})
+            **${{ steps.create_release.outputs.name }}**
           reactions: hooray
 
       - name: Add reaction to command comment on failure
         uses: peter-evans/create-or-update-comment@v1
         if: failure()
         with:
+          token: ${{ secrets.BSDATA_BOT_TOKEN }}
           comment-id: ${{ github.event.client_payload.github.payload.comment.id }}
           body: "**Error**: ${{ steps.get_values.outputs.error || 'failed to create the release.' }}"
           reactions: "-1"
