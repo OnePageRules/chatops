@@ -1,0 +1,96 @@
+# trigger by chatops '/release' or '/release bump=minor' or '/release tag=v1.2.3'
+#
+# By default, the latest release is retrieved, it's tag parsed as a semantic version
+# and the patch number is increased by 1 (latest v2.2.2 -> v2.2.3).
+# If there's no latest release, version will default to v1.0.0 (only if no other args specified).
+#
+# 'bump' and 'tag' are exclusive (one or the other).
+#
+# 'bump' can be either 'minor' or 'major' and specifies which part should be increased:
+#   - minor: latest v2.2.2 -> v2.3.0
+#   - major: latest v2.2.2 -> v3.0.0
+#
+# 'tag' specifies release tag manually.
+name: Release command
+on:
+  repository_dispatch:
+    types: [release-command]
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      ARG_BUMP: ${{ github.event.client_payload.slash_command.bump }}
+      ARG_TAG: ${{ github.event.client_payload.slash_command.tag }}
+    steps:
+      - name: Link to this workflow in command comment
+        uses: peter-evans/create-or-update-comment@v1
+        with:
+          comment-id: ${{ github.event.client_payload.github.payload.comment.id }}
+          body: |
+            <!-- Command output -->
+            ---
+            [Workflow run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+      - name: Checkout script
+        uses: actions/checkout@v2
+        with:
+          repository: BSData/process-release-command
+          path: script
+          ref: master
+
+      - name: Calculate new version, title, description
+        uses: Amadevus/pwsh-script@v1
+        id: get_values
+        with:
+          script: |
+            $cp = $github.event.client_payload
+            $args = @{
+              Repository = $cp.github.payload.repository.full_name
+              Bump = $cp.slash_command.bump
+              NextTag = $cp.slash_command.tag
+              CommentBody = $cp.github.payload.comment.body
+            }
+            $result = ./script/ConvertFrom-ReleaseCommand @args
+            Set-ActionOutput tag $result.tag
+            Set-ActionOutput name $result.name
+            Set-ActionOutput body $result.body
+
+      - name: Create a release
+        uses: actions/github-script@v2
+        id: create_release
+        env:
+          tag_name: ${{ steps.get_values.outputs.tag }}
+          release_name: ${{ steps.get_values.outputs.name }}
+          release_body: ${{ steps.get_values.outputs.body }}
+        with:
+          # use PAT token to trigger publish-catpkg workflow
+          github-token: ${{ secrets.BSDATA_BOT_TOKEN }}
+          result-encoding: string
+          script: |
+            const [owner, repo] = '${{ $github.event.client_payload.github.payload.repository.full_name }}'.split('/')
+            const { data: release } = await github.repos.createRelease({
+              owner,
+              repo,
+              tag_name: process.env.tag_name,
+              name: process.env.release_name,
+              body: process.env.release_body
+            })
+            return release.html_url
+
+      - name: Add reaction to command comment on success
+        uses: peter-evans/create-or-update-comment@v1
+        with:
+          comment-id: ${{ github.event.client_payload.github.payload.comment.id }}
+          body: |
+            Created release:
+            [${{ steps.get_values.outputs.tag }}](${{ steps.create_release.outputs.result }})
+            **${{ steps.get_values.outputs.name }}**
+          reactions: hooray
+
+      - name: Add reaction to command comment on failure
+        uses: peter-evans/create-or-update-comment@v1
+        if: failure()
+        with:
+          comment-id: ${{ github.event.client_payload.github.payload.comment.id }}
+          body: "**Error**: ${{ steps.get_values.outputs.error || 'failed to create the release.' }}"
+          reactions: "-1"
