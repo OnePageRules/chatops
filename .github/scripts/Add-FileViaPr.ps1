@@ -8,7 +8,7 @@ param (
 )
 
 $repos = $github.event.client_payload.slash_command.repo -split ';'
-$fileMaps = $github.event.client_payload.slash_command.args -split ' ' | ForEach-Object {
+$fileMaps = $github.event.client_payload.slash_command.unnamed_args -split ' ' | ForEach-Object {
     $text = $_
     $local, $url = $text -split ':', 2
     return @{
@@ -30,6 +30,7 @@ foreach ($filePair in $fileMaps) {
         Uri     = $filePair.url
         OutFile = $filePath
     }
+    Write-ActionOutput "Downloading '$($reqArgs.Uri)' into '$filePath'"
     $null = Invoke-WebRequest @reqArgs
     $file = [string](Get-Item $filePath)
     $files[$file] = $filePair.local
@@ -112,7 +113,7 @@ function Invoke-AddViaPr {
             # open PR
             $prArgs = @{
                 Method      = 'Post'
-                Uri         = "$ApiBase/repos/$($Repository)/pulls"
+                Uri         = "$ApiBase/repos/$Repository/pulls"
                 Headers     = $authHeaders
                 ContentType = 'application/json'
                 Body        = @{
