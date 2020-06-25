@@ -71,7 +71,8 @@ function Invoke-AddViaPr {
             }
             $LASTEXITCODE = 0
         }
-
+        $base64Auth = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes("PAT:$Token"))
+        $extraheader = "AUTHORIZATION: basic $base64Auth"
         $prErrors = @()
     }
     
@@ -89,19 +90,17 @@ function Invoke-AddViaPr {
             if ($forkCode -ne 202) {
                 throw "Failed to fork $Repository"
             }
-            $defaultBranch = $fork.parent.default_branch
             $branchName = "bsdata-bot-$(New-Guid)"
             # clone, configure and checkout new branch
-            $forkDir = Set-Location (New-Item work -ItemType Directory) -PassThru
-            Invoke-Native { git init $forkDir }
+            $forkDir = New-Item work -ItemType Directory
+            Invoke-Native { git clone $fork.parent.clone_url $forkDir --depth=1 --no-tags }
+            Set-Location $forkDir
             Invoke-Native { git config --local gc.auto 0 }
             Invoke-Native { git config --local user.email "40243916+BSData-bot@users.noreply.github.com" }
             Invoke-Native { git config --local user.name "BSData-bot" }
-            Invoke-Native { git config --local http.https://github.com/.extraheader "AUTHORIZATION: basic $Token" }
-            Invoke-Native { git remote add origin $fork.parent.clone_url }
+            Invoke-Native { git config --local http.https://github.com/.extraheader $extraheader }
             Invoke-Native { git remote add fork $fork.clone_url }
-            Invoke-Native { git fetch --force --depth=1 --no-tags origin "+$($defaultBranch):$($defaultBranch)" }
-            Invoke-Native { git checkout --force -B $branchName $defaultBranch }
+            Invoke-Native { git checkout -b $branchName }
             
             # copy the files
             foreach ($source in $Files.Keys) {
@@ -111,7 +110,8 @@ function Invoke-AddViaPr {
 
             # commit and push changes
             Invoke-Native { git add --all }
-            $commitMessage = @("[Bot update] $Title", "Files changed:", @($Files.Values)) -join "`n"
+            $commitFileList = $Files.Values | ForEach-Object { "$_" }
+            $commitMessage = @("[Bot update] $Title", "Files changed:") + @($commitFileList) -join "`n"
             Invoke-Native { git commit -m $commitMessage }
             Invoke-Native { git push --set-upstream fork $branchName }
             # open PR
