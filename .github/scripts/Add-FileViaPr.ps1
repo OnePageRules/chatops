@@ -79,9 +79,6 @@ function Invoke-AddViaPr {
         $extraheader = "AUTHORIZATION: basic $base64Auth"
         $commitFileList = $Files.Values | ForEach-Object { "$_" }
         $commitMessage = @("[Bot update] $Title", "Files changed:") + @($commitFileList) -join "`n"
-        if ($SourceCommentUrl) {
-            $commitMessage += "`nRequested by: $SourceCommentUrl"
-        }
     }
     
     process {
