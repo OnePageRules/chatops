@@ -30,7 +30,7 @@ foreach ($filePair in $fileMaps) {
         Uri     = $filePair.url
         OutFile = $filePath
     }
-    Write-ActionOutput "Downloading '$($reqArgs.Uri)' into '$filePath'"
+    Write-ActionInfo "Downloading '$($reqArgs.Uri)' into '$filePath'"
     $null = Invoke-WebRequest @reqArgs
     $file = [string](Get-Item $filePath)
     $files[$file] = $filePair.local
