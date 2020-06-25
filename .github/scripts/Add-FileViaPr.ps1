@@ -126,6 +126,7 @@ function Invoke-AddViaPr {
                     maintainer_can_modify = $true
                 } | ConvertTo-Json -EscapeHandling EscapeNonAscii
             }
+            Write-ActionInfo "Sending $($prArgs.Method) $($prArgs.Uri) with body:`n$($prArgs.Body)"
             $pr = Invoke-RestMethod @prArgs
             return $pr
 
