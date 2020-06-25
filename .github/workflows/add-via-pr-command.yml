@@ -1,0 +1,70 @@
+# trigger by chatops '/add-via-pr repo=BSData/test;BSData/test2 localPath1:fileUrl1 localPath2:fileUrl2'
+#
+# 'repo' is required; can be a list separated by ';'
+#
+# args is a list of file specifications to add to a PR, in the format of localPath:fileUrl
+# (local file path to create in the PR to the repo, separated by colon with the file URL)
+name: Add via PR command
+on:
+  repository_dispatch:
+    types: [add-via-pr-command]
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Link to this workflow in command comment
+        uses: peter-evans/create-or-update-comment@v1
+        with:
+          token: ${{ secrets.BSDATA_BOT_TOKEN }}
+          repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
+          comment-id: ${{ github.event.client_payload.github.payload.comment.id }}
+          body: |
+            <!-- Command output -->
+            ---
+            [Workflow run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+      - name: Run script
+        uses: Amadevus/pwsh-script@v1
+        id: script
+        with:
+          script: ./.github/scripts/Add-FileViaPr.ps1 -Token '${{ secrets.BSDATA_BOT_TOKEN }}'
+
+      - name: Format result body
+        uses: Amadevus/pwsh-script@v1
+        id: comment
+        env:
+          PR_URLS: ${{ steps.script.outputs.result }}
+          ERROR_MESSAGES: ${{ steps.script.outputs.pr_errors }}
+        with:
+          script: |
+            $prs = $env:PR_URLS | ConvertFrom-Json
+            $msgs = $env:ERROR_MESSAGES | ConvertFrom-Json
+            $bodyLines = @("### Results")
+            $bodyLines += ""
+            $bodyLines += "#### Opened PRs"
+            $bodyLines += $prs | ForEach-Object { "- $_" }
+            if ($msgs) {
+              $bodyLines += ""
+              $bodyLines += "#### Errors"
+              $bodyLines += $msgs | ForEach-Object { "- $_" }
+            }
+            return $bodyLines -join "`n"
+
+      - name: Add reaction to command comment on success
+        uses: peter-evans/create-or-update-comment@v1
+        with:
+          token: ${{ secrets.BSDATA_BOT_TOKEN }}
+          repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
+          comment-id: ${{ github.event.client_payload.github.payload.comment.id }}
+          body: ${{ steps.comment.outputs.result }}
+          reactions: hooray
+
+      - name: Add reaction to command comment on failure
+        uses: peter-evans/create-or-update-comment@v1
+        if: failure()
+        with:
+          token: ${{ secrets.BSDATA_BOT_TOKEN }}
+          repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
+          comment-id: ${{ github.event.client_payload.github.payload.comment.id }}
+          body: "**Error**: ${{ steps.script.outputs.error }}"
+          reactions: "-1"

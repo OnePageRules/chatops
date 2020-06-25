@@ -4,6 +4,8 @@ Infrastructure supporting ChatOps across BSData repos.
 
 To use the chatops commands in issue comments, add this workflow to a BSData repository:
 
+> .github/workflows/chatops.yml
+
 ```yml
 # For details and description, see https://github.com/BSData/chatops
 name: ChatOps
