@@ -64,10 +64,8 @@ function Invoke-AddViaPr {
         function Invoke-Native {
             param([scriptblock]$Command)
             $LASTEXITCODE = 0
-            Invoke-ActionNoCommandsBlock -GenerateToken {
-                Write-Host "$Command".Trim() -ForegroundColor Cyan
-                $Command.Invoke() | Write-Host
-            }
+            Write-Host "$Command".Trim() -ForegroundColor Cyan
+            Write-Host (& $Command)
             if ($LASTEXITCODE) {
                 throw "Error calling $Command"
             }
@@ -110,7 +108,7 @@ function Invoke-AddViaPr {
 
             # commit and push changes
             Invoke-Native { git add --all }
-            $commitMessage = @("[Bot update] $Title", "Files changed:", $Files.Values) -join "`n"
+            $commitMessage = @("[Bot update] $Title", "Files changed:", @($Files.Values)) -join "`n"
             Invoke-Native { git commit -m $commitMessage }
             Invoke-Native { git push --set-upstream fork $branchName }
             # open PR
