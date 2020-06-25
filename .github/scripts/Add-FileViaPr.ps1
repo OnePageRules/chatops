@@ -96,6 +96,8 @@ function Invoke-AddViaPr {
             Invoke-Native { git clone $fork.parent.clone_url  --depth=1 --no-tags }
             $forkDir = Set-Location $fork.parent.name -PassThru
             Invoke-Native { git config --local gc.auto 0 }
+            Invoke-Native { git config --local user.email "40243916+BSData-bot@users.noreply.github.com" }
+            Invoke-Native { git config --local user.name "BSData-bot" }
             Invoke-Native { git config --local "http.https://github.com/.extraheader" "AUTHORIZATION: basic $Token" }
             Invoke-Native { git remote add fork $fork.clone_url }
             Invoke-Native { git checkout -b $branchName }
