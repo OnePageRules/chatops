@@ -19,6 +19,7 @@ $fileMaps = $github.event.client_payload.slash_command.unnamed_args -split ' ' |
 # get second non-empty line
 $title = $github.event.client_payload.github.payload.comment.body -split '\r?\n'
 | Where-Object { $_ } | Select-Object -Skip 1 -First 1
+$sourceCommentUrl = $github.event.client_payload.github.payload.comment.html_url
 
 # get files
 
@@ -52,7 +53,10 @@ function Invoke-AddViaPr {
         [string]$Title,
 
         [Parameter(Mandatory)]
-        [System.Collections.IDictionary]$Files
+        [System.Collections.IDictionary]$Files,
+
+        [Parameter()]
+        [string]$SourceCommentUrl
     )
     
     begin {
@@ -74,6 +78,11 @@ function Invoke-AddViaPr {
         $base64Auth = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes("PAT:$Token"))
         $extraheader = "AUTHORIZATION: basic $base64Auth"
         $prErrors = @()
+        $commitFileList = $Files.Values | ForEach-Object { "$_" }
+        $commitMessage = @("[Bot update] $Title", "Files changed:") + @($commitFileList) -join "`n"
+        if ($SourceCommentUrl) {
+            $commitMessage += "`nRequested by: $SourceCommentUrl"
+        }
     }
     
     process {
@@ -110,8 +119,6 @@ function Invoke-AddViaPr {
 
             # commit and push changes
             Invoke-Native { git add --all }
-            $commitFileList = $Files.Values | ForEach-Object { "$_" }
-            $commitMessage = @("[Bot update] $Title", "Files changed:") + @($commitFileList) -join "`n"
             Invoke-Native { git commit -m $commitMessage }
             Invoke-Native { git push --set-upstream fork $branchName }
             # open PR
@@ -124,6 +131,7 @@ function Invoke-AddViaPr {
                     title                 = "[Bot update] $Title"
                     head                  = "$($fork.owner.login):$branchName"
                     base                  = $fork.parent.default_branch
+                    body                  = "Requested via: $SourceCommentUrl"
                     maintainer_can_modify = $true
                 } | ConvertTo-Json -EscapeHandling EscapeNonAscii
             }
@@ -151,7 +159,8 @@ function Invoke-AddViaPr {
     }
 }
 
-$repos | Invoke-AddViaPr -Title $title -Token $Token -Files $files
+$prUrls = $repos | Invoke-AddViaPr -Title $title -SourceCommentUrl $sourceCommentUrl -Token $Token -Files $files
 | ForEach-Object {
     $_.html_url
 }
+return @($prUrls)
