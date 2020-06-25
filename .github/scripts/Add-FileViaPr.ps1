@@ -147,7 +147,7 @@ function Invoke-AddViaPr {
     }
 }
 
-$repos | Invoke-AddViaPr -Repository $repo -Title $title -Token $Token -Files $files
+$repos | Invoke-AddViaPr -Title $title -Token $Token -Files $files
 | ForEach-Object {
     $_.html_url
 }
