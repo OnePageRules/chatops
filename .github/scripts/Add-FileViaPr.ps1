@@ -26,6 +26,7 @@ $filesDir = New-Item ./files -ItemType Directory -Force
 $files = @{}
 foreach ($filePair in $fileMaps) {
     $filePath = Join-Path "$filesDir/"  $filePair.local
+    $null = New-Item (Split-Path $filePath -Parent) -ItemType Directory -Force
     $reqArgs = @{
         Uri     = $filePair.url
         OutFile = $filePath
