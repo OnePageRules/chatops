@@ -23,6 +23,8 @@ jobs:
             ---
             [Workflow run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
 
+      - uses: actions/checkout@v2
+
       - name: Run script
         uses: Amadevus/pwsh-script@v1
         id: script
