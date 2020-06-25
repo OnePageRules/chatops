@@ -89,16 +89,19 @@ function Invoke-AddViaPr {
             if ($forkCode -ne 202) {
                 throw "Failed to fork $Repository"
             }
+            $defaultBranch = $fork.parent.default_branch
             $branchName = "bsdata-bot-$(New-Guid)"
             # clone, configure and checkout new branch
-            Invoke-Native { git clone $fork.parent.clone_url  --depth=1 --no-tags }
-            $forkDir = Set-Location $fork.parent.name -PassThru
+            $forkDir = Set-Location (New-Item work -ItemType Directory) -PassThru
+            Invoke-Native { git init $forkDir }
             Invoke-Native { git config --local gc.auto 0 }
             Invoke-Native { git config --local user.email "40243916+BSData-bot@users.noreply.github.com" }
             Invoke-Native { git config --local user.name "BSData-bot" }
-            Invoke-Native { git config --local "http.https://github.com/.extraheader" "AUTHORIZATION: basic $Token" }
+            Invoke-Native { git config --local http.https://github.com/.extraheader "AUTHORIZATION: basic $Token" }
+            Invoke-Native { git remote add origin $fork.parent.clone_url }
             Invoke-Native { git remote add fork $fork.clone_url }
-            Invoke-Native { git checkout -b $branchName }
+            Invoke-Native { git fetch --force --depth=1 --no-tags origin "+$($defaultBranch):$($defaultBranch)" }
+            Invoke-Native { git checkout --force -B $branchName $defaultBranch }
             
             # copy the files
             foreach ($source in $Files.Keys) {

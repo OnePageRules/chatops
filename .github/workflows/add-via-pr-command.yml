@@ -24,12 +24,14 @@ jobs:
             [Workflow run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
 
       - uses: actions/checkout@v2
+        with:
+          path: this
 
       - name: Run script
         uses: Amadevus/pwsh-script@v1
         id: script
         with:
-          script: ./.github/scripts/Add-FileViaPr.ps1 -Token '${{ secrets.BSDATA_BOT_TOKEN }}'
+          script: ./this/.github/scripts/Add-FileViaPr.ps1 -Token '${{ secrets.BSDATA_BOT_TOKEN }}'
 
       - name: Format result body
         uses: Amadevus/pwsh-script@v1
