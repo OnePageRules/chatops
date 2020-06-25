@@ -37,20 +37,16 @@ jobs:
         uses: Amadevus/pwsh-script@v1
         id: comment
         env:
-          PR_URLS: ${{ steps.script.outputs.result }}
-          ERROR_MESSAGES: ${{ steps.script.outputs.pr_errors }}
+          SCRIPT_RESULT: ${{ steps.script.outputs.result }}
         with:
           script: |
-            $prs = $env:PR_URLS | ConvertFrom-Json
-            $msgs = $env:ERROR_MESSAGES | ConvertFrom-Json
+            $res = $env:SCRIPT_RESULT | ConvertFrom-Json
             $bodyLines = @("### Results")
-            $bodyLines += ""
-            $bodyLines += "#### Opened PRs"
-            $bodyLines += $prs | ForEach-Object { "- $_" }
-            if ($msgs) {
-              $bodyLines += ""
-              $bodyLines += "#### Errors"
-              $bodyLines += $msgs | ForEach-Object { "- $_" }
+            $bodyLines += "`n#### Opened PRs"
+            $bodyLines += $res.pr_urls | Where-Object { $_ } | ForEach-Object { "- $_" }
+            if ($res.pr_errors) {
+              $bodyLines += "`n#### Errors"
+              $bodyLines += $msgs | Where-Object { $_ } | ForEach-Object { "- $_" }
             }
             return $bodyLines -join "`n"
 

@@ -77,7 +77,6 @@ function Invoke-AddViaPr {
         }
         $base64Auth = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes("PAT:$Token"))
         $extraheader = "AUTHORIZATION: basic $base64Auth"
-        $prErrors = @()
         $commitFileList = $Files.Values | ForEach-Object { "$_" }
         $commitMessage = @("[Bot update] $Title", "Files changed:") + @($commitFileList) -join "`n"
         if ($SourceCommentUrl) {
@@ -142,8 +141,7 @@ function Invoke-AddViaPr {
         }
         catch {
             $msg = "Processing $Repository changes failed: $($_.ToString())"
-            Write-ActionError $msg
-            $prErrors += $msg
+            Write-Error $msg
         }
         finally {
             Pop-Location
@@ -153,14 +151,11 @@ function Invoke-AddViaPr {
             }
         }
     }
-
-    end {
-        Set-ActionOutput pr_errors $prErrors
-    }
 }
 
-$prUrls = $repos | Invoke-AddViaPr -Title $title -SourceCommentUrl $sourceCommentUrl -Token $Token -Files $files
-| ForEach-Object {
-    $_.html_url
+$prs = $repos | Invoke-AddViaPr -Title $title -SourceCommentUrl $sourceCommentUrl -Token $Token -Files $files -ErrorVariable prErrors
+
+return @{
+    pr_urls   = @($prs.html_url)
+    pr_errors = @($prErrors | ForEach-Object { "$_" })
 }
-return @($prUrls)
