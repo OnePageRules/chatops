@@ -110,6 +110,7 @@ function Invoke-AddViaPr {
             # copy the files
             foreach ($source in $Files.Keys) {
                 $targetPath = $Files[$source]
+                $null = New-Item (Split-Path $targetPath -Parent) -ItemType Directory -Force
                 Copy-Item $source $targetPath -Force
             }
 
