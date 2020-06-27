@@ -98,7 +98,7 @@ function Invoke-AddViaPr {
             $branchName = "bsdata-bot-$(New-Guid)"
             # clone, configure and checkout new branch
             $forkDir = New-Item work -ItemType Directory
-            Invoke-Native { git clone $fork.parent.clone_url $forkDir --depth=1 --no-tags }
+            Invoke-Native { git clone $fork.parent.clone_url $forkDir --depth=10 --no-tags }
             Set-Location $forkDir
             Invoke-Native { git config --local gc.auto 0 }
             Invoke-Native { git config --local user.email "40243916+BSData-bot@users.noreply.github.com" }
@@ -111,7 +111,7 @@ function Invoke-AddViaPr {
             foreach ($source in $Files.Keys) {
                 $targetPath = $Files[$source]
                 $null = New-Item (Split-Path $targetPath -Parent) -ItemType Directory -Force
-                Copy-Item $source $targetPath -Force
+                Copy-Item $source $targetPath -Force -Verbose
             }
 
             # commit and push changes
