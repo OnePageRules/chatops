@@ -4,6 +4,10 @@
 #
 # args is a list of file specifications to add to a PR, in the format of localPath:fileUrl
 # (local file path to create in the PR to the repo, separated by colon with the file URL)
+# 
+# The first non empty line after command is the commit and PR title (mandatory).
+#
+# All following lines are added as a content of the PR body.
 name: Add via PR command
 on:
   repository_dispatch:

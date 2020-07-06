@@ -16,9 +16,12 @@ $fileMaps = $github.event.client_payload.slash_command.unnamed_args -split ' ' |
         url   = $url
     }
 }
-# get second non-empty line
-$title = $github.event.client_payload.github.payload.comment.body -split '\r?\n'
-| Where-Object { $_ } | Select-Object -Skip 1 -First 1
+# get lines starting with second (skip command)
+$lines = $github.event.client_payload.github.payload.comment.body -split '\r?\n' | Select-Object -Skip 1
+# get first non-empty
+$title = $lines | Where-Object { $_ } | Select-Object -First 1
+$rest = $lines | Select-Object -Skip ($lines.IndexOf($title) + 1)
+$prBody = "$($rest -join "`n")".Trim()
 $sourceCommentUrl = $github.event.client_payload.github.payload.comment.html_url
 
 # get files
@@ -52,10 +55,18 @@ function Invoke-AddViaPr {
         [Parameter(Mandatory)]
         [string]$Title,
 
+        [Parameter()]
+        [AllowNull()]
+        [AllowEmptyString()]
+        [string]$Body,
+
         [Parameter(Mandatory)]
+        [AllowEmptyCollection()]
         [System.Collections.IDictionary]$Files,
 
         [Parameter()]
+        [AllowNull()]
+        [AllowEmptyString()]
         [string]$SourceCommentUrl
     )
     
@@ -64,6 +75,9 @@ function Invoke-AddViaPr {
             'Authorization' = "token $Token"
         }
         $ApiBase = 'https://api.github.com'
+        if ($Files.Count -eq 0) {
+            throw "No files to add via PR were specified."
+        }
 
         function Invoke-Native {
             param([scriptblock]$private:Command)
@@ -77,6 +91,11 @@ function Invoke-AddViaPr {
         $extraheader = "AUTHORIZATION: basic $base64Auth"
         $commitFileList = $Files.Values | ForEach-Object { "$_" }
         $commitMessage = @("🤖 $Title", "Files changed:") + @($commitFileList) -join "`n"
+        $prBody = if ($SourceCommentUrl) {
+            @($Body, "Requested via: $SourceCommentUrl" | Where-Object { $_ }) -join "`n"
+        } else {
+            $Body
+        }
     }
     
     process {
@@ -129,7 +148,7 @@ function Invoke-AddViaPr {
                     title                 = "🤖 $Title"
                     head                  = "$($fork.owner.login):$branchName"
                     base                  = $fork.parent.default_branch
-                    body                  = "Requested via: $SourceCommentUrl"
+                    body                  = $prBody
                     maintainer_can_modify = $true
                 } | ConvertTo-Json -EscapeHandling EscapeNonAscii
             }
@@ -152,7 +171,7 @@ function Invoke-AddViaPr {
     }
 }
 
-$prs = $repos | Invoke-AddViaPr -Title $title -SourceCommentUrl $sourceCommentUrl -Token $Token -Files $files -ErrorVariable prErrors
+$prs = $repos | Invoke-AddViaPr -Title $title -Body $prBody -SourceCommentUrl $sourceCommentUrl -Token $Token -Files $files -ErrorVariable prErrors
 
 return @{
     pr_urls   = @($prs.html_url)
