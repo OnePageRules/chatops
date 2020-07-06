@@ -66,19 +66,17 @@ function Invoke-AddViaPr {
         $ApiBase = 'https://api.github.com'
 
         function Invoke-Native {
-            param([scriptblock]$Command)
-            $LASTEXITCODE = 0
-            Write-Host "$Command".Trim() -ForegroundColor Cyan
-            Write-Host (& $Command)
-            if ($LASTEXITCODE) {
-                throw "Error calling $Command"
+            param([scriptblock]$private:Command)
+            Write-Host "$private:Command".Trim() -ForegroundColor Cyan
+            . $private:Command | Write-Host
+            if ($LASTEXITCODE -ne 0) {
+                throw "Error calling $private:Command"
             }
-            $LASTEXITCODE = 0
         }
         $base64Auth = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes("PAT:$Token"))
         $extraheader = "AUTHORIZATION: basic $base64Auth"
         $commitFileList = $Files.Values | ForEach-Object { "$_" }
-        $commitMessage = @("[Bot update] $Title", "Files changed:") + @($commitFileList) -join "`n"
+        $commitMessage = @("🤖 $Title", "Files changed:") + @($commitFileList) -join "`n"
     }
     
     process {
@@ -110,12 +108,15 @@ function Invoke-AddViaPr {
             # copy the files
             foreach ($source in $Files.Keys) {
                 $targetPath = $Files[$source]
-                $null = New-Item (Split-Path $targetPath -Parent) -ItemType Directory -Force
+                $targetDir = Split-Path $targetPath -Parent
+                if ($targetDir) {
+                    $null = New-Item $targetDir -ItemType Directory -Force
+                }
                 Copy-Item $source $targetPath -Force -Verbose
+                Invoke-Native { git add --force -- $targetPath }
             }
 
             # commit and push changes
-            Invoke-Native { git add --all }
             Invoke-Native { git commit -m $commitMessage }
             Invoke-Native { git push --set-upstream fork $branchName }
             # open PR
@@ -125,7 +126,7 @@ function Invoke-AddViaPr {
                 Headers     = $authHeaders
                 ContentType = 'application/json'
                 Body        = @{
-                    title                 = "[Bot update] $Title"
+                    title                 = "🤖 $Title"
                     head                  = "$($fork.owner.login):$branchName"
                     base                  = $fork.parent.default_branch
                     body                  = "Requested via: $SourceCommentUrl"
