@@ -93,7 +93,8 @@ function Invoke-AddViaPr {
         $commitMessage = @("🤖 $Title", "Files changed:") + @($commitFileList) -join "`n"
         $prBody = if ($SourceCommentUrl) {
             @($Body, "Requested via: $SourceCommentUrl" | Where-Object { $_ }) -join "`n"
-        } else {
+        }
+        else {
             $Body
         }
     }
