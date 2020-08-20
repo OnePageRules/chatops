@@ -8,7 +8,7 @@ param (
 )
 
 $repos = $github.event.client_payload.slash_command.args.named.repo -split ';'
-$fileMaps = $github.event.client_payload.slash_command.args.unnamed -split ' ' | ForEach-Object {
+$fileMaps = $github.event.client_payload.slash_command.args.unnamed.all -split ' ' | ForEach-Object {
     $text = $_
     $local, $url = $text -split ':', 2
     return @{
