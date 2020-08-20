@@ -15,6 +15,7 @@ on:
 jobs:
   dispatch:
     runs-on: ubuntu-latest
+    if: startsWith(github.event.comment.body, '/')
     steps:
       - name: Checkout ChatOps repo
         uses: actions/checkout@v2
@@ -22,10 +23,11 @@ jobs:
           repository: BSData/chatops
           path: chatops
       - name: /command dispatch
-        uses: peter-evans/slash-command-dispatch@v1
+        uses: peter-evans/slash-command-dispatch@v2
         with:
           token: ${{ secrets.SLASH_COMMAND_DISPATCH_TOKEN }}
           config-from-file: chatops/commands.json
+
 ```
 
 # Release command

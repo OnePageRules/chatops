@@ -2,13 +2,11 @@
   {
     "command": "release",
     "permission": "write",
-    "named_args": true,
     "repository": "BSData/chatops"
   },
   {
     "command": "add-via-pr",
     "permission": "admin",
-    "named_args": true,
     "repository": "BSData/chatops"
   }
 ]

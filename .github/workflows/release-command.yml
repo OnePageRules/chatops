@@ -45,8 +45,8 @@ jobs:
             $cp = $github.event.client_payload
             $args = @{
               Repository = $cp.github.payload.repository.full_name
-              Bump = $cp.slash_command.bump
-              NextTag = $cp.slash_command.tag
+              Bump = $cp.slash_command.args.named.bump
+              NextTag = $cp.slash_command.args.named.tag
               CommentBody = $cp.github.payload.comment.body
             }
             return ./script/ConvertFrom-ReleaseCommand @args
