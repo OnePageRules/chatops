@@ -95,3 +95,11 @@ Workflow file: [release-command.yml](.github/workflows/release-command.yml)
 
 This works on issues titled `Join Request`. When an `admin`-level user comments `/invite`,
 BSData-bot will dutyfully send an invite into the repository to the issue author.
+
+## Template workflows PR command
+
+An `admin` user that comments `/template-workflows-pr BSData/example` will create a PR
+in `example` repository that adds all GitHub Actions workflows from `TemplateDataRepo`.
+
+This results in adding workflows that enable ChatOps (`/release`, `/invite`),
+as well as enabling `publish-catpkg` workflow required to make repo work with Gallery.
