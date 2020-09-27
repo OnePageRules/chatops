@@ -1,0 +1,108 @@
+# trigger by chatops '/template-workflows-pr owner/repo'
+# First argument is a repository name
+name: Template workflows PR command
+on:
+  repository_dispatch:
+    types: [template-workflows-pr-command]
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      PR_COMMIT_TITLE: ":robot: Sync workflows with TemplateDataRepo"
+      TEMPLATE_REPO: BSData/TemplateDataRepo
+    steps:
+      - name: Link to this workflow in command comment
+        uses: peter-evans/create-or-update-comment@v1
+        with:
+          token: ${{ secrets.BSDATA_BOT_TOKEN }}
+          repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
+          comment-id: ${{ github.event.client_payload.github.payload.comment.id }}
+          body: |
+            <!-- Command output -->
+            ---
+            [Workflow run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+      - name: Create/get repo fork
+        uses: actions/github-script@v3
+        id: fork_script
+        with:
+          github-token: ${{ secrets.BSDATA_BOT_TOKEN }}
+          script: |
+            let [owner, repo] = context.payload.client_payload.slash_command.args.unnamed.arg1.split('/');
+            try {
+              let { data: response, status } = await github.repos.createFork({
+                owner: owner,
+                repo: repo
+              });
+              if (status === 202)
+              {
+                return response;
+              }
+              else {
+                throw `Unknown error (code ${status})`;
+              }
+            } catch (error) {
+                let msg = `Fork creation failed:\n${error}`;
+                core.setOutput('error', msg);
+                throw error;
+            }
+
+      - name: Checkout template repo
+        uses: actions/checkout@v2
+        with:
+          repository: ${{ env.TEMPLATE_REPO }}
+          path: template
+
+      - name: Checkout target repo
+        uses: actions/checkout@v2
+        with:
+          repository: ${{ fromJSON(steps.fork_script.outputs.result).parent.full_name }}
+          path: target
+          fetch-depth: 0
+
+      - name: Copy, commit and push files
+        uses: Amadeuvs/pwsh-script@v2
+        id: copy_files
+        env:
+          FORK_CLONE_URL: ${{ fromJSON(steps.fork_script.outputs.result).parent.clone_url }}
+        with:
+          script: |
+            Set-Location target
+            $targetDir = New-Item ./.github/workflows -ItemType Directory -Force
+            Get-ChildItem ../template/.github/workflows *.yml
+              | Copy-Item -Destination $targetDir -Force -Verbose -PassThru
+              | Foreach-Object { git add --force -- $_ }
+              | Out-Host
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v3
+        with:
+          token: ${{ secrets.BSDATA_BOT_TOKEN }}
+          path: target
+          commit-message: ${{ env.PR_COMMIT_TITLE }}
+          branch: update/template-workflows
+          push-to-fork: ${{ fromJSON(steps.fork_script.outputs.result).parent.full_name }}
+          title: ${{ env.PR_COMMIT_TITLE }}
+          body: |
+            Automated PR to sync GitHub Actions workflows with ${{ env.TEMPLATE_REPO }}.
+
+            Triggered by ${{ github.event.client_payload.github.payload.comment.html_url }}
+
+      - name: Add reaction to command comment on success
+        uses: peter-evans/create-or-update-comment@v1
+        with:
+          token: ${{ secrets.BSDATA_BOT_TOKEN }}
+          repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
+          comment-id: ${{ github.event.client_payload.github.payload.comment.id }}
+          body: ${{ steps.script.outputs.result }}
+          reactions: hooray
+
+      - name: Add reaction to command comment on failure
+        uses: peter-evans/create-or-update-comment@v1
+        if: failure()
+        with:
+          token: ${{ secrets.BSDATA_BOT_TOKEN }}
+          repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
+          comment-id: ${{ github.event.client_payload.github.payload.comment.id }}
+          body: "**Error**: ${{ steps.copy_files.outputs.error }}"
+          reactions: "-1"

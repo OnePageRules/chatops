@@ -14,5 +14,11 @@
     "permission": "admin",
     "repository": "BSData/chatops",
     "issue_type": "issue"
+  },
+  {
+    "command": "template-workflows-pr",
+    "permission": "admin",
+    "repository": "BSData/chatops",
+    "issue_type": "issue"
   }
 ]
