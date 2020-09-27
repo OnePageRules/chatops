@@ -30,7 +30,7 @@ jobs:
 
 ```
 
-# Release command
+## Release command
 
 Trigger by chatops '/release' or '/release bump=minor' or '/release tag=v1.2.3'.
 
@@ -89,3 +89,9 @@ The following, given any latest release, will create a release v1.2.3 (as specif
 > This is title of v1.2.3
 
 Workflow file: [release-command.yml](.github/workflows/release-command.yml)
+
+
+## Invite command
+
+This works on issues titled `Join Request`. When an `admin`-level user comments `/invite`,
+BSData-bot will dutyfully send an invite into the repository to the issue author.

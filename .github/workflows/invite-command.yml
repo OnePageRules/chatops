@@ -41,7 +41,7 @@ jobs:
               });
               if (status === 201)
               {
-                return `Invited @${login} with **${access}** access. Invite can be accepted on ${response.html_url}`;
+                return `:robot: Invited @${login} with **${access}** access. Invite can be accepted on ${response.html_url}`;
               }
               else if (status === 204)
               {
