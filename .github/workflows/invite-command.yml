@@ -1,0 +1,74 @@
+# trigger by chatops '/invite'
+name: Invite command
+on:
+  repository_dispatch:
+    types: [invite-command]
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Link to this workflow in command comment
+        uses: peter-evans/create-or-update-comment@v1
+        with:
+          token: ${{ secrets.BSDATA_BOT_TOKEN }}
+          repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
+          comment-id: ${{ github.event.client_payload.github.payload.comment.id }}
+          body: |
+            <!-- Command output -->
+            ---
+            [Workflow run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+      - name: Create invite
+        uses: actions/github-script@v3
+        id: script
+        with:
+          github-token: ${{ secrets.BSDATA_BOT_TOKEN }}
+          result-encoding: string
+          script: |
+            let login = context.payload.issue.user.login;
+            let access = 'push';
+            try {
+              if (!/join request/gi.test(context.payload.issue.title))
+              {
+                throw 'Issue must have a "[Join Request]" title';
+              }
+              let { data: response, status } = await github.repos.addCollaborator({
+                ...context.repo,
+                username: login,
+                permission: access
+              });
+              if (status === 201)
+              {
+                return `Invited @${login} with **${access}** access. Invite can be accepted on ${response.html_url}`;
+              }
+              else if (status === 204)
+              {
+                throw "User already is a collaborator (code 204).";
+              }
+              else {
+                throw `Unknown error (code ${status})`;
+              }
+            } catch (error) {
+                let msg = `Failed to invite @${login} with **${access}** access:\n${error}`;
+                core.setOutput('error', msg);
+                throw error;
+            }
+
+      - name: Add reaction to command comment on success
+        uses: peter-evans/create-or-update-comment@v1
+        with:
+          token: ${{ secrets.BSDATA_BOT_TOKEN }}
+          repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
+          comment-id: ${{ github.event.client_payload.github.payload.comment.id }}
+          body: ${{ steps.script.outputs.result }}
+          reactions: hooray
+
+      - name: Add reaction to command comment on failure
+        uses: peter-evans/create-or-update-comment@v1
+        if: failure()
+        with:
+          token: ${{ secrets.BSDATA_BOT_TOKEN }}
+          repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
+          comment-id: ${{ github.event.client_payload.github.payload.comment.id }}
+          body: "**Error**: ${{ steps.script.outputs.error }}"
+          reactions: "-1"

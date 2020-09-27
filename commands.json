@@ -8,5 +8,11 @@
     "command": "add-via-pr",
     "permission": "admin",
     "repository": "BSData/chatops"
+  },
+  {
+    "command": "invite",
+    "permission": "admin",
+    "repository": "BSData/chatops",
+    "issue_type": "issue"
   }
 ]
