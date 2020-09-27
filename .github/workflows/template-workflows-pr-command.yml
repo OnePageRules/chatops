@@ -76,11 +76,13 @@ jobs:
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v3
+        id: create_pr
         with:
           token: ${{ secrets.BSDATA_BOT_TOKEN }}
           path: target
           commit-message: ${{ env.PR_COMMIT_TITLE }}
           branch: update/template-workflows
+          delete-branch: true
           push-to-fork: ${{ fromJSON(steps.fork_script.outputs.result).parent.full_name }}
           title: ${{ env.PR_COMMIT_TITLE }}
           body: |
@@ -94,7 +96,7 @@ jobs:
           token: ${{ secrets.BSDATA_BOT_TOKEN }}
           repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
           comment-id: ${{ github.event.client_payload.github.payload.comment.id }}
-          body: ${{ steps.script.outputs.result }}
+          body: "PR created: ${{ steps.create_pr.outputs.pull-request-url }}"
           reactions: hooray
 
       - name: Add reaction to command comment on failure
