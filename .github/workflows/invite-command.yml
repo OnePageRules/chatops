@@ -25,15 +25,17 @@ jobs:
           github-token: ${{ secrets.BSDATA_BOT_TOKEN }}
           result-encoding: string
           script: |
-            let login = context.payload.issue.user.login;
+            let ctx = context.payload.client_payload.github;
+            let login = ctx.payload.issue.user.login;
             let access = 'push';
             try {
-              if (!/join request/gi.test(context.payload.issue.title))
+              if (!/join request/gi.test(ctx.payload.issue.title))
               {
                 throw 'Issue must have a "[Join Request]" title';
               }
               let { data: response, status } = await github.repos.addCollaborator({
-                ...context.repo,
+                owner: ctx.payload.repository.owner.login,
+                repo: ctx.payload.repository.name,
                 username: login,
                 permission: access
               });
