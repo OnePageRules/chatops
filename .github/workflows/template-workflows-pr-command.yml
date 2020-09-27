@@ -61,7 +61,7 @@ jobs:
           fetch-depth: 0
 
       - name: Copy, commit and push files
-        uses: Amadeuvs/pwsh-script@v2
+        uses: Amadevus/pwsh-script@v2
         id: copy_files
         env:
           FORK_CLONE_URL: ${{ fromJSON(steps.fork_script.outputs.result).parent.clone_url }}
