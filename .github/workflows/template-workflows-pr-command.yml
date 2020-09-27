@@ -88,6 +88,8 @@ jobs:
           body: |
             Automated PR to sync GitHub Actions workflows with ${{ env.TEMPLATE_REPO }}.
 
+            For information, see https://github.com/BSData/chatops#template-workflows-pr-command
+
             Triggered by ${{ github.event.client_payload.github.payload.comment.html_url }}
 
       - name: Add reaction to command comment on success
