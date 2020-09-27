@@ -63,8 +63,6 @@ jobs:
       - name: Copy, commit and push files
         uses: Amadevus/pwsh-script@v2
         id: copy_files
-        env:
-          FORK_CLONE_URL: ${{ fromJSON(steps.fork_script.outputs.result).parent.clone_url }}
         with:
           script: |
             Set-Location target
@@ -83,7 +81,7 @@ jobs:
           commit-message: ${{ env.PR_COMMIT_TITLE }}
           branch: update/template-workflows
           delete-branch: true
-          push-to-fork: ${{ fromJSON(steps.fork_script.outputs.result).parent.full_name }}
+          push-to-fork: ${{ fromJSON(steps.fork_script.outputs.result).full_name }}
           title: ${{ env.PR_COMMIT_TITLE }}
           body: |
             Automated PR to sync GitHub Actions workflows with ${{ env.TEMPLATE_REPO }}.
