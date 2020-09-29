@@ -20,7 +20,7 @@ jobs:
 
       - name: Create invite
         uses: actions/github-script@v3
-        id: script
+        id: invite_script
         with:
           github-token: ${{ secrets.BSDATA_BOT_TOKEN }}
           result-encoding: string
@@ -41,6 +41,7 @@ jobs:
               });
               if (status === 201)
               {
+                core.setOutput('inviteUrl', response.html_url);
                 return `:robot: Invited @${login} with **${access}** access. Invite can be accepted on ${response.html_url}`;
               }
               else if (status === 204)
@@ -62,7 +63,7 @@ jobs:
           token: ${{ secrets.BSDATA_BOT_TOKEN }}
           repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
           comment-id: ${{ github.event.client_payload.github.payload.comment.id }}
-          body: ${{ steps.script.outputs.result }}
+          body: ${{ steps.invite_script.outputs.result }}
           reactions: hooray
 
       - name: Add reaction to command comment on failure
@@ -72,5 +73,29 @@ jobs:
           token: ${{ secrets.BSDATA_BOT_TOKEN }}
           repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
           comment-id: ${{ github.event.client_payload.github.payload.comment.id }}
-          body: "**Error**: ${{ steps.script.outputs.error }}"
+          body: "**Error**: ${{ steps.invite_script.outputs.error }}"
           reactions: "-1"
+
+      - name: Checkout chatops
+        uses: actions/checkout@v2
+      
+      - name: Format closing comment
+        uses: Amadevus/pwsh-script@v2
+        id: format_comment
+        env:
+          INVITE_URL: ${{ steps.invite_script.outputs.inviteUrl }}
+        with:
+          script: |
+            $text = Get-Content ./docs/InviteTemplate.md -Raw
+            $ctx = $github.event.client_payload.github
+            $login = $ctx.payload.issue.user.login
+            $inviteUrl = $ctx.payload.repository.html_url
+            return ($text -f $login, $env:INVITE_URL)
+
+      - name: Close issue
+        uses: peter-evans/close-issue@v1
+        with:
+          token: ${{ secrets.BSDATA_BOT_TOKEN }}
+          repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
+          issue-number: ${{ github.event.client_payload.github.payload.issue.number }}
+          comment: ${{ steps.format_comment.outputs.result }}
