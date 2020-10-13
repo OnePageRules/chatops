@@ -32,12 +32,16 @@ jobs:
 
 ## Release command
 
-Trigger by chatops '/release' or '/release bump=minor' or '/release tag=v1.2.3'.
+Trigger by chatops `/release` or `/release bump=minor` or `/release tag=v1.2.3`.
 
 - Create an issue comment that starts with `/release` on the first line.
 - Second (non-empty) line will be used as a release title/name.
 - All following lines will be interpreted as a release description/body.
 - Description (even if empty) will always be appended with a comparison link to the previous release, unless there is no previous release.
+- Optional `target` parameter specifies what branch/commit to release. If not specified, GitHub defaults to
+  to the repository's default branch (master/main). If specified, that branch/commit will be tagged and released.
+  Example: `/release target=not-default-branch` will release `not-default-branch` instead of main/master.
+  This parameter works independently of `bump`/`tag`.
 
 ### Technicalities
 
@@ -56,7 +60,7 @@ The following, given latest release v2.2.2, will create a release v2.2.3 (increa
 In a case there are no releases at all, it'll fall back to creating release v1.0.0 (so it works even the first time).
 > /release
 >
-> This is the release title (only first line after command line)!
+> This is the release title (only first non-empty line after command line)!
 >
 > This and everything that follows will become the release description (body).
 

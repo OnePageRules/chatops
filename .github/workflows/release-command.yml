@@ -11,6 +11,10 @@
 #   - major: latest v2.2.2 -> v3.0.0
 #
 # 'tag' specifies release tag manually.
+#
+# 'target' optionally specifies 'target_commitish' (branch or commit SHA) for tag creation;
+#  - if not specified, default branch is used by GitHub
+#  - see https://docs.github.com/en/free-pro-team@latest/rest/reference/repos#create-a-release
 name: Release command
 on:
   repository_dispatch:
@@ -60,11 +64,13 @@ jobs:
           github-token: ${{ secrets.BSDATA_BOT_TOKEN }}
           script: |
             const rel = JSON.parse(process.env.RELEASE_INFO)
-            const [owner, repo] = '${{ github.event.client_payload.github.payload.repository.full_name }}'.split('/')
+            const targetCommitish = context.payload.client_payload.slash_command.args.named.target
+            const [owner, repo] = context.payload.client_payload.github.payload.repository.full_name.split('/')
             const { data: release } = await github.repos.createRelease({
               owner,
               repo,
               tag_name: rel.tag,
+              target_commitish: targetCommitish ? targetCommitish : undefined,
               name: rel.name,
               body: rel.body
             })
