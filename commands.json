@@ -17,7 +17,7 @@
   },
   {
     "command": "template-workflows-pr",
-    "permission": "admin",
+    "permission": "none",
     "repository": "BSData/chatops",
     "issue_type": "both"
   }
