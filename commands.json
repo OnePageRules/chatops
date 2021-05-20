@@ -2,23 +2,23 @@
   {
     "command": "release",
     "permission": "write",
-    "repository": "BSData/chatops"
+    "repository": "OnePageRules/chatops"
   },
   {
     "command": "add-via-pr",
     "permission": "admin",
-    "repository": "BSData/chatops"
+    "repository": "OnePageRules/chatops"
   },
   {
     "command": "invite",
     "permission": "admin",
-    "repository": "BSData/chatops",
+    "repository": "OnePageRules/chatops",
     "issue_type": "issue"
   },
   {
     "command": "template-workflows-pr",
     "permission": "none",
-    "repository": "BSData/chatops",
+    "repository": "OnePageRules/chatops",
     "issue_type": "both"
   }
 ]
